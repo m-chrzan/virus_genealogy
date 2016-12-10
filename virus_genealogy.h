@@ -21,7 +21,7 @@ class Node{
 		}
 		
 		void add_parents(std::vector<T> const &parent_ids) {
-			// przy założeniu, że konstruktor kopiujący T jest silny
+			// przy założeniu, że konstruktor kopiujący T jest no throw
 			parents.insert(parents.end(), parent_ids.begin(), parent_ids.end());
 		}
 };
