@@ -95,7 +95,15 @@ class VirusGenealogy{
 		// Zwraca referencję do obiektu reprezentującego wirus o podanym
 		// identyfikatorze.
 		// Zgłasza wyjątek VirusNotFound, jeśli żądany wirus nie istnieje.
-		Virus& operator[](typename Virus::id_type const &id) const;
+		Virus& operator[](typename Virus::id_type const &id) const {
+            if (!exists(id))
+                throw VirusNotFound();
+
+            auto iterator = mapa.find(id);
+            std::shared_ptr<Node> node_sp = std::get<1>(*iterator);
+            Node& node = *(node_sp.get());
+            return node.virus_;
+        }
 
 		// Tworzy węzeł reprezentujący nowy wirus o identyfikatorze id
 		// powstały z wirusów o podanym identyfikatorze parent_id lub

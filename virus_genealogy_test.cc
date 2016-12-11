@@ -127,9 +127,37 @@ void testExists() {
     checkFalse(vg2.exists("G"), "Virus not in the genealogy doesn't exist.");
 }
 
+void testSubscript() {
+    beginTest();
+
+    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+
+    std::string id = vg1["A"].get_id();
+    std::string expected_id = "A";
+    checkEqual(id, expected_id, "Got the correct virus.");
+
+    checkExceptionThrown<VirusNotFound>([&vg1]{ vg1["B"]; },
+            "Can't index with a virus id not in the genealogy.");
+
+    VirusGenealogy<Virus<std::string>> vg2 = smallGenealogy();
+
+    id = vg2["A"].get_id();
+    expected_id = "A";
+    checkEqual(id, expected_id, "Got the correct virus.");
+
+    id = vg2["B"].get_id();
+    expected_id = "B";
+    checkEqual(id, expected_id, "Got the correct virus.");
+
+    id = vg2["ABCD"].get_id();
+    expected_id = "ABCD";
+    checkEqual(id, expected_id, "Got the correct virus.");
+}
+
 int main() {
     testGetStemId();
     testGetChildren();
     testGetParents();
     testExists();
+    testSubscript();
 }
