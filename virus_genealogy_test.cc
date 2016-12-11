@@ -24,6 +24,19 @@ VirusGenealogy<Virus<std::string>> smallGenealogy() {
     return vg;
 }
 
+template<typename Virus>
+void checkAllExist(VirusGenealogy<Virus> vg,
+        std::vector<typename Virus::id_type> ids,
+        std::string message) {
+    bool allExist = true;
+
+    std::for_each(ids.begin(), ids.end(), [&vg, &allExist](typename Virus::id_type id) {
+            allExist = (allExist && vg.exists(id));
+            });
+
+    check(allExist, message);
+}
+
 void testGetStemId() {
     beginTest();
 
@@ -98,8 +111,25 @@ void testGetParents() {
             "Can't get parents of virus not in the genealogy.");
 }
 
+void testExists() {
+    beginTest();
+
+    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+
+    check(vg1.exists("A"), "The original virus exists in the genealogy.");
+    checkFalse(vg1.exists("B"),
+            "A different virus does not exist in the genealogy.");
+
+    VirusGenealogy<Virus<std::string>> vg2 = smallGenealogy();
+
+    checkAllExist(vg2, {"A", "B", "C", "D", "E", "AB", "CD", "ABCD", "F"},
+            "Found all genealogy nodes.");
+    checkFalse(vg2.exists("G"), "Virus not in the genealogy doesn't exist.");
+}
+
 int main() {
     testGetStemId();
     testGetChildren();
     testGetParents();
+    testExists();
 }
