@@ -22,30 +22,33 @@ class TriedToRemoveStemVirus: std::exception{
 template<class Virus>
 class VirusGenealogy{
 	private:
-		template<class T>
 		class Node{
 			public:
-				std::vector<T> children;
-				std::vector<T> parents;
-				T id;
-				Node(T id_type):id(id_type) {};
+				typename Virus::id_type id_;
+                Virus virus_;
+
+				std::vector<typename Virus::id_type> children;
+				std::vector<typename Virus::id_type> parents;
+
+				Node(typename Virus::id_type id) : id_(id),
+                                                   virus_(Virus(id)) {};
 						
-				void add_child(T const &child_id) {
+				void add_child(typename Virus::id_type const &child_id) {
 					children.push_back(child_id); //strong
 				}
 						
-				void add_parent(T const &parent_id) {
+				void add_parent(typename Virus::id_type const &parent_id) {
 					parents.push_back(parent_id); // strong
 				}
 						
-				void add_parents(std::vector<T> const &parent_ids) {
-						// przy założeniu, że konstruktor kopiujący T jest no throw
+				void add_parents(std::vector<typename Virus::id_type> const &parent_ids) {
+						// przy założeniu, że konstruktor kopiujący typename Virus::id_type jest no throw
 					parents.insert(parents.end(), parent_ids.begin(), parent_ids.end());
 				}
 				// chyba trzeba dopisać konstruktory i = żeby były nothrow/strong
 		};
 		
-		std::map<typename Virus::id_type, std::shared_ptr<Node<typename Virus::id_type>>> mapa;
+		std::map<typename Virus::id_type, std::shared_ptr<Node>> mapa;
 		typename Virus::id_type first_id;
 		
 	public:
@@ -53,8 +56,7 @@ class VirusGenealogy{
 		// Tworzy także węzeł wirusa macierzystego o identyfikatorze stem_id.
 		VirusGenealogy(typename Virus::id_type const &stem_id)
 			:first_id(stem_id) {
-			mapa.insert(make_pair(stem_id, 
-				std::make_shared<Node<typename Virus::id_type>>(stem_id))); // strong
+			mapa.insert(make_pair(stem_id, std::make_shared<Node>(stem_id))); // strong
 		};
 
 		// Zwraca identyfikator wirusa macierzystego.
@@ -69,8 +71,7 @@ class VirusGenealogy{
 			if (!exists(id))
 				throw VirusNotFound();
 				
-			std::shared_ptr<Node<typename Virus::id_type>> 
-				ptr = mapa.find(id)->second; // strong
+			std::shared_ptr<Node> ptr = mapa.find(id)->second; // strong
 			return ptr->children; // nothrow
 			
 		}
@@ -82,8 +83,7 @@ class VirusGenealogy{
 			if (!exists(id))
 				throw VirusNotFound();
 				
-			std::shared_ptr<Node<typename Virus::id_type>> 
-				ptr = mapa.find(id)->second; // strong
+			std::shared_ptr<Node> ptr = mapa.find(id)->second; // strong
 			return ptr->parents; // nothrow?
 		}
 
@@ -110,10 +110,9 @@ class VirusGenealogy{
 			if (!exists(parent_id))
 				throw VirusNotFound();
 	
-			std::shared_ptr<Node<typename Virus::id_type>> 
-				parent = mapa.find(parent_id)->second; // strong
-			std::shared_ptr<Node<typename Virus::id_type>> node =
-				std::make_shared<Node<typename Virus::id_type>>(id);
+			std::shared_ptr<Node> parent = mapa.find(parent_id)->second; // strong
+			std::shared_ptr<Node> node =
+				std::make_shared<Node>(id);
 			node->add_parent(parent_id); // strong
 			mapa.insert(make_pair(id, node)); // strong
 			parent->add_child(id); // both strong
@@ -127,13 +126,12 @@ class VirusGenealogy{
 				if (!exists(parent_id))
 					throw VirusNotFound();
 				
-			std::shared_ptr<Node<typename Virus::id_type>>
-				node = std::make_shared<Node<typename Virus::id_type>>(id);
+			std::shared_ptr<Node>
+				node = std::make_shared<Node>(id);
 			node->add_parents(parent_ids); // strong
 			mapa.insert(make_pair(id, node)); // strong
 			for (typename Virus::id_type parent_id : parent_ids) {
-				std::shared_ptr<Node<typename Virus::id_type>> 
-					parent = mapa.find(parent_id)->second; // strong
+				std::shared_ptr<Node> parent = mapa.find(parent_id)->second; // strong
 				parent->add_child(id); // strong
 			}
 		}
@@ -144,10 +142,8 @@ class VirusGenealogy{
 			if (!exists(parent_id) || !exists(child_id))
 				throw VirusNotFound();
 			
-			std::shared_ptr<Node<typename Virus::id_type>> 
-				parent = mapa.find(parent_id)->second; // strong
-			std::shared_ptr<Node<typename Virus::id_type>> 
-				child = mapa.find(child_id)->second; // strong
+			std::shared_ptr<Node> parent = mapa.find(parent_id)->second; // strong
+			std::shared_ptr<Node> child = mapa.find(child_id)->second; // strong
 				
 			parent->add_child(child_id); // strong
 			child->add_parent(parent_id); // strong
