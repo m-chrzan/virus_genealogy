@@ -29,4 +29,32 @@ void checkNotEqual(T const& p1, T const& p2, std::string message) {
     checkFalse(p1 == p2, message);
 }
 
+void checkNoExceptionThrown(std::function<void(void)> function,
+        std::string message) {
+    bool thrown = false;
+
+    try {
+        function();
+    } catch (...) {
+        thrown = true;
+    }
+
+    checkFalse(thrown, message);
+}
+
+template <class E>
+void checkExceptionThrown(std::function<void(void)> function, std::string message) {
+    bool thrown = false;
+
+    try {
+        function();
+    } catch (E e) {
+        thrown = true;
+    } catch (...) {
+        thrown = false;
+    }
+
+    check(thrown, message);
+}
+
 #endif
