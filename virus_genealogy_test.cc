@@ -154,10 +154,50 @@ void testSubscript() {
     checkEqual(id, expected_id, "Got the correct virus.");
 }
 
+void testCreate() {
+    beginTest();
+
+    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+
+    checkExceptionThrown<VirusAlreadyCreated>([&vg1] { vg1.create("A", "A"); },
+            "Can't create virus that already exists.");
+
+    checkExceptionThrown<VirusNotFound>([&vg1] { vg1.create("C", "B"); },
+            "Virus can't descend from virus that doesn't exist.");
+
+    vg1.create("B", "A");
+
+    check(vg1.exists("B"), "New virus exists.");
+
+    std::vector<std::string> children = vg1.get_children("A");
+    std::vector<std::string> expected_children = {"B"};
+    checkSameSet(children, expected_children, "Stem has a new child.");
+
+    std::vector<std::string> parents = vg1.get_parents("B");
+    std::vector<std::string> expected_parents = {"A"};
+    checkSameSet(parents, expected_parents, "New virus's parent set correctly.");
+
+    vg1.create("AB", std::vector<std::string> {"A", "B"});
+
+    children = vg1.get_children("A");
+    expected_children = {"B", "AB"};
+    checkSameSet(children, expected_children, "Stem has a new child.");
+
+    children = vg1.get_children("B");
+    expected_children = {"AB"};
+    checkSameSet(children, expected_children, "New virus a new child.");
+
+    parents = vg1.get_parents("AB");
+    expected_parents = {"A", "B"};
+    checkSameSet(parents, expected_parents, "New virus's parents set correctly.");
+}
+
+
 int main() {
     testGetStemId();
     testGetChildren();
     testGetParents();
     testExists();
     testSubscript();
+    testCreate();
 }
