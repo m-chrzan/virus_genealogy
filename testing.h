@@ -1,17 +1,23 @@
 #ifndef TESTING_H_
 #define TESTING_H_
 
+#include <functional>
 #include <iostream>
 #include <string>
 
 #define beginTest() std::cout << "Starting " << __FUNCTION__ << ".\n"
 
-void check(bool test, std::string message);
-void checkFalse(bool test, std::string message);
-template <class T>
-void checkEqual(T const& p1, T const& p2, std::string message);
-template <class T>
-void checkNotEqual(T const& p1, T const& p2, std::string message);
+void check(bool test, std::string message) {
+    if (test) {
+        std::cout << "  Test ok. " << message << std::endl;
+    } else {
+        std::cout << "  TEST FAILED! " << message << std::endl;
+    }
+}
+
+void checkFalse(bool test, std::string message) {
+    check(!test, message);
+}
 
 template <class T>
 void checkEqual(T const& p1, T const& p2, std::string message) {
