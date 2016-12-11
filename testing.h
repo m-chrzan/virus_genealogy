@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <iostream>
+#include <set>
 #include <string>
 
 #define beginTest() std::cout << "Starting " << __FUNCTION__ << ".\n"
@@ -27,6 +28,14 @@ void checkEqual(T const& p1, T const& p2, std::string message) {
 template <class T>
 void checkNotEqual(T const& p1, T const& p2, std::string message) {
     checkFalse(p1 == p2, message);
+}
+
+template <class T>
+void checkSameSet(T const& p1, T const& p2, std::string message) {
+    std::set<typename T::value_type> set1(p1.begin(), p1.end());
+    std::set<typename T::value_type> set2(p2.begin(), p2.end());
+
+    check(set1 == set2, message);
 }
 
 void checkNoExceptionThrown(std::function<void(void)> function,
