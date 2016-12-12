@@ -5,24 +5,24 @@
 #include "virus_genealogy.h"
 #include "sample_virus.h"
 
-VirusGenealogy<Virus<std::string>> oneVirusGenealogy() {
-    return VirusGenealogy<Virus<std::string>>("A");
-}
+class SingleVirusGenealogy : public VirusGenealogy<Virus<std::string>> {
+public:
+    SingleVirusGenealogy() : VirusGenealogy("A") {}
+};
 
-
-VirusGenealogy<Virus<std::string>> smallGenealogy() {
-    VirusGenealogy<Virus<std::string>> vg("A");
-    vg.create("B", "A");
-    vg.create("C", "A");
-    vg.create("D", "A");
-    vg.create("AB", std::vector<std::string>{"A", "B"});
-    vg.create("CD", std::vector<std::string>{"C", "D"});
-    vg.create("ABCD", std::vector<std::string>{"AB", "CD"});
-    vg.create("E", "B");
-    vg.create("F", "CD");
-
-    return vg;
-}
+class SmallGenealogy : public VirusGenealogy<Virus<std::string>> {
+public:
+    SmallGenealogy() : VirusGenealogy("A") {
+        create("B", "A");
+        create("C", "A");
+        create("D", "A");
+        create("AB", std::vector<std::string>{"A", "B"});
+        create("CD", std::vector<std::string>{"C", "D"});
+        create("ABCD", std::vector<std::string>{"AB", "CD"});
+        create("E", "B");
+        create("F", "CD");
+    }
+};
 
 template<typename Virus>
 void checkAllExist(VirusGenealogy<Virus> vg,
@@ -40,116 +40,116 @@ void checkAllExist(VirusGenealogy<Virus> vg,
 void testGetStemId() {
     beginTest();
 
-    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
-    checkEqual<std::string>(vg1.get_stem_id(), "A",
+    SingleVirusGenealogy singleVirus;
+    checkEqual<std::string>(singleVirus.get_stem_id(), "A",
             "Stem id remembered correctly.");
 
-    VirusGenealogy<Virus<std::string>> vg2 = smallGenealogy();
-    checkEqual<std::string>(vg2.get_stem_id(), "A",
+    SmallGenealogy smallGenealogy;
+    checkEqual<std::string>(smallGenealogy.get_stem_id(), "A",
             "Stem id remembered correctly.");
 }
 
 void testGetChildren() {
     beginTest();
 
-    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+    SingleVirusGenealogy singleVirus;
 
-    std::vector<std::string> children = vg1.get_children("A");
+    std::vector<std::string> children = singleVirus.get_children("A");
     std::vector<std::string> expected_children;
     checkEqual(children, expected_children, "Stem has no children.");
 
-    checkExceptionThrown<VirusNotFound>([&vg1] { vg1.get_children("B"); },
+    checkExceptionThrown<VirusNotFound>([&singleVirus] { singleVirus.get_children("B"); },
             "Can't get children of virus not in the genealogy.");
 
-    VirusGenealogy<Virus<std::string>> vg2 = smallGenealogy();
+    SmallGenealogy smallGenealogy;
 
-    children = vg2.get_children("A");
+    children = smallGenealogy.get_children("A");
     expected_children = {"AB", "B", "C", "D"};
     checkSameSet(children, expected_children,
             "Got the correct children for the stem.");
 
-    children = vg2.get_children("CD");
+    children = smallGenealogy.get_children("CD");
     expected_children = {"ABCD", "F"};
     checkSameSet(children, expected_children,
             "Got the correct children for an inner node.");
 
-    children = vg2.get_children("E");
+    children = smallGenealogy.get_children("E");
     expected_children = {};
     checkSameSet(children, expected_children, "Leaf has no children.");
 
-    checkExceptionThrown<VirusNotFound>([&vg2] { vg2.get_children("AC"); },
+    checkExceptionThrown<VirusNotFound>([&smallGenealogy] { smallGenealogy.get_children("AC"); },
             "Can't get children of virus not in the genealogy.");
 }
 
 void testGetParents() {
     beginTest();
 
-    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+    SingleVirusGenealogy singleVirus;
 
-    std::vector<std::string> parents = vg1.get_parents("A");
+    std::vector<std::string> parents = singleVirus.get_parents("A");
     std::vector<std::string> expected_parents;
     checkSameSet(parents, expected_parents, "Stem has no parents.");
 
-    checkExceptionThrown<VirusNotFound>([&vg1] { vg1.get_parents("B"); },
+    checkExceptionThrown<VirusNotFound>([&singleVirus] { singleVirus.get_parents("B"); },
             "Can't get parents of virus not in the genealogy.");
 
-    VirusGenealogy<Virus<std::string>> vg2 = smallGenealogy();
+    SmallGenealogy smallGenealogy;
 
-    parents = vg2.get_parents("A");
+    parents = smallGenealogy.get_parents("A");
     expected_parents = {};
     checkSameSet(parents, expected_parents, "Stem has no parents.");
 
-    parents = vg2.get_parents("B");
+    parents = smallGenealogy.get_parents("B");
     expected_parents = {"A"};
     checkSameSet(parents, expected_parents, "Got the correct parent.");
 
-    parents = vg2.get_parents("ABCD");
+    parents = smallGenealogy.get_parents("ABCD");
     expected_parents = {"AB", "CD"};
     checkSameSet(parents, expected_parents, "Got the correct parents.");
 
-    checkExceptionThrown<VirusNotFound>([&vg2] { vg2.get_parents("42"); },
+    checkExceptionThrown<VirusNotFound>([&smallGenealogy] { smallGenealogy.get_parents("42"); },
             "Can't get parents of virus not in the genealogy.");
 }
 
 void testExists() {
     beginTest();
 
-    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+    SingleVirusGenealogy singleVirus;
 
-    check(vg1.exists("A"), "The original virus exists in the genealogy.");
-    checkFalse(vg1.exists("B"),
+    check(singleVirus.exists("A"), "The original virus exists in the genealogy.");
+    checkFalse(singleVirus.exists("B"),
             "A different virus does not exist in the genealogy.");
 
-    VirusGenealogy<Virus<std::string>> vg2 = smallGenealogy();
+    SmallGenealogy smallGenealogy;
 
-    checkAllExist(vg2, {"A", "B", "C", "D", "E", "AB", "CD", "ABCD", "F"},
+    checkAllExist(smallGenealogy, {"A", "B", "C", "D", "E", "AB", "CD", "ABCD", "F"},
             "Found all genealogy nodes.");
-    checkFalse(vg2.exists("G"), "Virus not in the genealogy doesn't exist.");
+    checkFalse(smallGenealogy.exists("G"), "Virus not in the genealogy doesn't exist.");
 }
 
 void testSubscript() {
     beginTest();
 
-    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+    SingleVirusGenealogy singleVirus;
 
-    std::string id = vg1["A"].get_id();
+    std::string id = singleVirus["A"].get_id();
     std::string expected_id = "A";
     checkEqual(id, expected_id, "Got the correct virus.");
 
-    checkExceptionThrown<VirusNotFound>([&vg1]{ vg1["B"]; },
+    checkExceptionThrown<VirusNotFound>([&singleVirus]{ singleVirus["B"]; },
             "Can't index with a virus id not in the genealogy.");
 
-    VirusGenealogy<Virus<std::string>> vg2 = smallGenealogy();
+    SmallGenealogy smallGenealogy;
 
-    id = vg2["A"].get_id();
+    id = smallGenealogy["A"].get_id();
     expected_id = "A";
     checkEqual(id, expected_id, "Got the correct virus.");
 
-    id = vg2["B"].get_id();
+    id = smallGenealogy["B"].get_id();
     expected_id = "B";
     checkEqual(id, expected_id, "Got the correct virus.");
 
-    id = vg2["ABCD"].get_id();
+    id = smallGenealogy["ABCD"].get_id();
     expected_id = "ABCD";
     checkEqual(id, expected_id, "Got the correct virus.");
 }
@@ -157,37 +157,37 @@ void testSubscript() {
 void testCreate() {
     beginTest();
 
-    VirusGenealogy<Virus<std::string>> vg1 = oneVirusGenealogy();
+    SingleVirusGenealogy singleVirus;
 
-    checkExceptionThrown<VirusAlreadyCreated>([&vg1] { vg1.create("A", "A"); },
+    checkExceptionThrown<VirusAlreadyCreated>([&singleVirus] { singleVirus.create("A", "A"); },
             "Can't create virus that already exists.");
 
-    checkExceptionThrown<VirusNotFound>([&vg1] { vg1.create("C", "B"); },
+    checkExceptionThrown<VirusNotFound>([&singleVirus] { singleVirus.create("C", "B"); },
             "Virus can't descend from virus that doesn't exist.");
 
-    vg1.create("B", "A");
+    singleVirus.create("B", "A");
 
-    check(vg1.exists("B"), "New virus exists.");
+    check(singleVirus.exists("B"), "New virus exists.");
 
-    std::vector<std::string> children = vg1.get_children("A");
+    std::vector<std::string> children = singleVirus.get_children("A");
     std::vector<std::string> expected_children = {"B"};
     checkSameSet(children, expected_children, "Stem has a new child.");
 
-    std::vector<std::string> parents = vg1.get_parents("B");
+    std::vector<std::string> parents = singleVirus.get_parents("B");
     std::vector<std::string> expected_parents = {"A"};
     checkSameSet(parents, expected_parents, "New virus's parent set correctly.");
 
-    vg1.create("AB", std::vector<std::string> {"A", "B"});
+    singleVirus.create("AB", std::vector<std::string> {"A", "B"});
 
-    children = vg1.get_children("A");
+    children = singleVirus.get_children("A");
     expected_children = {"B", "AB"};
     checkSameSet(children, expected_children, "Stem has a new child.");
 
-    children = vg1.get_children("B");
+    children = singleVirus.get_children("B");
     expected_children = {"AB"};
     checkSameSet(children, expected_children, "New virus a new child.");
 
-    parents = vg1.get_parents("AB");
+    parents = singleVirus.get_parents("AB");
     expected_parents = {"A", "B"};
     checkSameSet(parents, expected_parents, "New virus's parents set correctly.");
 }
