@@ -25,8 +25,8 @@ public:
 };
 
 template<typename Virus>
-void checkAllExist(VirusGenealogy<Virus> vg,
-        std::vector<typename Virus::id_type> ids,
+void checkAllExist(VirusGenealogy<Virus> &vg,
+        std::vector<typename Virus::id_type> &ids,
         std::string message) {
     bool allExist = true;
 
