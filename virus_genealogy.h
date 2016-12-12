@@ -42,10 +42,17 @@ class VirusGenealogy{
 				}
 						
 				void add_parents(std::vector<typename Virus::id_type> const &parent_ids) {
-						// przy założeniu, że konstruktor kopiujący typename Virus::id_type jest no throw
+					// przy założeniu, że konstruktor kopiujący typename Virus::id_type jest no throw
+					// bedzie rzucac, trzeba zmodyfikowac
 					parents.insert(parents.end(), parent_ids.begin(), parent_ids.end());
 				}
 				// chyba trzeba dopisać konstruktory i = żeby były nothrow/strong
+				// == na virusie tez moze rzucac wyjatek
+				// wszystko co moze bedzie rzucac
+				// nie kopiowac mapy, mozna w nodzie trzymac jakis iterator wskazujacy miejsce
+				// nawet iterowanie po wektorze może rzucić wyjątkiem
+				// ale można tutaj trzymać iterator do miejsca w mapie
+				// można kopiować parents/children ale dużej mapy nie
 		};
 		
 		std::map<typename Virus::id_type, std::shared_ptr<Node>> mapa;
