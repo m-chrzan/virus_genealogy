@@ -121,8 +121,9 @@ void testExists() {
             "A different virus does not exist in the genealogy.");
 
     SmallGenealogy smallGenealogy;
+    std::vector<std::string> expected = {"A", "B", "C", "D", "E", "AB", "CD", "ABCD", "F"};
 
-    checkAllExist(smallGenealogy, {"A", "B", "C", "D", "E", "AB", "CD", "ABCD", "F"},
+    checkAllExist(smallGenealogy, expected,
             "Found all genealogy nodes.");
     checkFalse(smallGenealogy.exists("G"), "Virus not in the genealogy doesn't exist.");
 }
@@ -192,12 +193,55 @@ void testCreate() {
     checkSameSet(parents, expected_parents, "New virus's parents set correctly.");
 }
 
+void testRemove() {
+    beginTest();
+
+    SingleVirusGenealogy singleVirus;
+
+    checkExceptionThrown<TriedToRemoveStemVirus>(
+            [&singleVirus] { singleVirus.remove("A"); },
+            "Can't remove stem.");
+
+    checkExceptionThrown<VirusNotFound>(
+            [&singleVirus] { singleVirus.remove("B"); },
+            "Can't remove a virus that's not in the genealogy.");
+
+    SmallGenealogy smallGenealogy;
+
+    checkExceptionThrown<TriedToRemoveStemVirus>(
+            [&singleVirus] { singleVirus.remove("A"); },
+            "Can't remove stem.");
+
+    checkExceptionThrown<VirusNotFound>(
+            [&singleVirus] { singleVirus.remove("ABC"); },
+            "Can't remove a virus that's not in the genealogy.");
+
+    smallGenealogy.remove("E");
+    checkFalse(smallGenealogy.exists("E"), "A leaf virus was removed.");
+
+    std::vector<std::string> children = smallGenealogy.get_children("B");
+    std::vector<std::string> expected_children = {"AB"};
+
+    checkSameSet(children, expected_children,
+            "The removed virus's parent no longer has it as a child.");
+
+    smallGenealogy.remove("CD");
+    checkFalse(smallGenealogy.exists("CD"), "Removed inner virus.");
+    checkFalse(smallGenealogy.exists("F"), "Removed orphaned virus.");
+    check(smallGenealogy.exists("ABCD"), "Virus with second parent still exists.");
+
+    std::vector<std::string> parents = smallGenealogy.get_parents("ABCD");
+    std::vector<std::string> expected_parents = {"AB"};
+
+    checkSameSet(parents, expected_parents, "Virus has only one parent left.");
+}
 
 int main() {
     testGetStemId();
-    testGetChildren();
-    testGetParents();
     testExists();
-    testSubscript();
+    testGetParents();
+    testGetChildren();
     testCreate();
+    testSubscript();
+    testRemove();
 }
