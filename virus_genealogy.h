@@ -1,23 +1,17 @@
-#ifndef VIRUS_GENEALOGY
-#define VIRUS_GENEALOGY
+#ifndef VIRUS_GENEALOGY_H
+#define VIRUS_GENEALOGY_H
 
 #include <vector>
 #include <map>
 #include <utility>
 #include <memory>
 
+class VirusNotFound : std::exception {};
+class VirusAlreadyCreated : std::exception {};
+class TriedToRemoveStemVirus : std::exception {};
 
-class VirusNotFound: std::exception{
-	
-};
 
-class VirusAlreadyCreated: std::exception{
-	
-};
 
-class TriedToRemoveStemVirus: std::exception{
-	
-};
 
 template<class Virus>
 class VirusGenealogy{
