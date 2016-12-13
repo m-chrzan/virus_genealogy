@@ -7,9 +7,23 @@
 #include <utility>
 #include <vector>
 
-class VirusNotFound : std::exception {};
-class VirusAlreadyCreated : std::exception {};
-class TriedToRemoveStemVirus : std::exception {};
+class VirusNotFound : public std::exception {
+    const char* what() const noexcept {
+        return "Virus not found!";
+    }
+};
+
+class VirusAlreadyCreated : public std::exception {
+    const char* what() const noexcept {
+        return "Virus already created!";
+    }
+};
+
+class TriedToRemoveStemVirus : public std::exception {
+    const char* what() const noexcept {
+        return "Can't remove stem virus!";
+    }
+};
 
 template<class Virus>
 class VirusGenealogy{
