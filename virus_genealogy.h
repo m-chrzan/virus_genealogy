@@ -125,7 +125,11 @@ public:
     VirusGenealogy(typename Virus::id_type const &stem_id) : stem_id_(stem_id) {
         std::shared_ptr<Node> node_sp = std::make_shared<Node>(Node(stem_id));
         genealogy_.insert(std::make_pair(stem_id, node_sp));
-    };
+    }
+
+    VirusGenealogy(VirusGenealogy &) = delete;
+
+    VirusGenealogy& operator=(const VirusGenealogy &other) = delete;
 
     typename Virus::id_type get_stem_id() const {
         return stem_id_;
