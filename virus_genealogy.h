@@ -46,6 +46,7 @@ private:
     }
 
     class Node {
+		typedef typename std::map<typename Virus::id_type, std::shared_ptr<Node>>::iterator map_iter;
     public:
         Node(typename Virus::id_type const &id) : virus_(id), id_(id) {
         }
@@ -67,8 +68,12 @@ private:
 
         void remove_parent(std::shared_ptr<Node> &parent) {
             std::weak_ptr<Node> parent_wp(parent); // no-throw
-            parents_.erase(parent_wp); // no-throw
+			parents_.erase(parent_wp); // no-throw
         } // therefore no-throw
+        
+        bool edge_exists(std::shared_ptr<Node> &parent) {
+			return parents_.find(parent) != parents_.end(); // strong
+		}
 
         std::vector<typename Virus::id_type> get_children() const {
             std::vector<typename Virus::id_type> children_ids;
@@ -99,9 +104,19 @@ private:
         typename Virus::id_type get_id() {
             return id_;
         }
+        
+        map_iter get_iter() {
+			return iter;
+		}
+			
+		void set_iter(map_iter it) {
+			iter = it;
+		}
+		
     private:
         Virus virus_;
         typename Virus::id_type id_;
+        map_iter iter;
 
         std::set<std::weak_ptr<Node>, std::owner_less<std::weak_ptr<Node>>> children_;
         std::set<std::weak_ptr<Node>, std::owner_less<std::weak_ptr<Node>>> parents_;
@@ -148,28 +163,47 @@ public:
         throwIfNotFound(parent_id);
 
         std::shared_ptr<Node> node_sp = std::make_shared<Node>(id); //const
-        genealogy_.insert(std::make_pair(id, node_sp)); // strong
+        auto it = genealogy_.insert(std::make_pair(id, node_sp)).first; // strong
 
         try {
+			node_sp->set_iter(it);
             connect(id, parent_id); // strong
         } catch (...) {
-            genealogy_.erase(id); // no-throw
+			node_sp->set_iter(genealogy_.end()); // temporary
+            genealogy_.erase(it); // no-throw
         }
     } // try-catch-reverse makes the whole function strong
 
     void create(typename Virus::id_type const &id,
             std::vector<typename Virus::id_type> const &parent_ids) {
         throwIfAlreadyCreated(id);
-        for (typename Virus::id_type parent_id : parent_ids) {
-            throwIfNotFound(parent_id);
+        
+        std::vector<std::shared_ptr<Node>> nodes;
+        for (size_t i = 0; i < parent_ids.size(); i++) {
+            throwIfNotFound(parent_ids[i]);
         }
-
+        
+         for (size_t i = 0; i < parent_ids.size(); i++) {
+            nodes.push_back(genealogy_.find(parent_ids[i])->second); 
+        }
+        
+		// if push_back throws then it's okay
         std::shared_ptr<Node> node_sp = std::make_shared<Node>(id); // const
-        genealogy_.insert(std::make_pair(id, node_sp)); // strong
-
-        for (typename Virus::id_type parent_id : parent_ids) {
-            connect(id, parent_id);
-        }
+        auto it = genealogy_.insert(std::make_pair(id, node_sp)).first; // strong
+		
+		try {
+			node_sp->set_iter(it);
+			for (size_t i = 0; i < parent_ids.size(); i++) {
+				connect(id, parent_ids[i]);
+			}
+		} catch (...) {
+			node_sp->set_iter(genealogy_.end());
+			genealogy_.erase(it);
+			for (size_t i = 0; i < nodes.size(); i++) {
+				nodes[i]->remove_child(node_sp);
+				node_sp->remove_parent(nodes[i]);
+			}
+		}
     }
 
     void connect(typename Virus::id_type const &child_id,
@@ -180,14 +214,17 @@ public:
         std::shared_ptr<Node> child_sp = genealogy_.find(child_id)->second; // const
 
         std::shared_ptr<Node> parent_sp = genealogy_.find(parent_id)->second; // const
-
-        child_sp->add_parent(parent_sp); // strong
-        try {
-            parent_sp->add_child(child_sp); // strong
-        } catch (...) {
-            child_sp->remove_parent(parent_sp); // no-throw
-            throw;
-        }
+        
+        // strong, but if throws we don't care
+        if (!child_sp->edge_exists(parent_sp)) {
+			child_sp->add_parent(parent_sp); // strong
+			try {
+				parent_sp->add_child(child_sp); // strong
+			} catch (...) {
+				child_sp->remove_parent(parent_sp); // no-throw
+				throw;
+			}
+		}
     } // try-catch-reverse makes whole function strong
 
     void remove(typename Virus::id_type const &id) {
