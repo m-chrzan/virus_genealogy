@@ -34,13 +34,13 @@ private:
     typename Virus::id_type stem_id_;
     std::map<typename Virus::id_type, std::shared_ptr<Node>> genealogy_;
 
-    void throwIfNotFound(typename Virus::id_type const &id) const {
+    void throw_if_not_found(typename Virus::id_type const &id) const {
         if (!exists(id)) {
             throw VirusNotFound();
         }
     }
 
-    void throwIfAlreadyCreated(typename Virus::id_type const &id) const {
+    void throw_if_already_created(typename Virus::id_type const &id) const {
         if (exists(id)) {
             throw VirusAlreadyCreated();
         }
@@ -140,14 +140,14 @@ public:
 
     std::vector<typename Virus::id_type>
         get_children(typename Virus::id_type const &id) const {
-        throwIfNotFound(id);
+        throw_if_not_found(id);
 
         std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // strong
         return node_sp->get_children();
     }
 
     std::vector<typename Virus::id_type> get_parents(typename Virus::id_type const &id) const {
-        throwIfNotFound(id);
+        throw_if_not_found(id);
 
         std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // strong
         return node_sp->get_parents();
@@ -158,7 +158,7 @@ public:
     }
 
     Virus& operator[](typename Virus::id_type const &id) const {
-        throwIfNotFound(id);
+        throw_if_not_found(id);
 
         std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // strong
         return node_sp->get_virus();
@@ -166,8 +166,8 @@ public:
 
     void create(typename Virus::id_type const &id,
             typename Virus::id_type const &parent_id) {
-        throwIfAlreadyCreated(id);
-        throwIfNotFound(parent_id);
+        throw_if_already_created(id);
+        throw_if_not_found(parent_id);
 
         std::shared_ptr<Node> node_sp = std::make_shared<Node>(id); //const
         auto it = genealogy_.insert(std::make_pair(id, node_sp)).first; // strong
@@ -182,11 +182,11 @@ public:
 
     void create(typename Virus::id_type const &id,
             std::vector<typename Virus::id_type> const &parent_ids) {
-        throwIfAlreadyCreated(id);
+        throw_if_already_created(id);
         
         std::vector<std::shared_ptr<Node>> nodes;
         for (size_t i = 0; i < parent_ids.size(); i++) {
-            throwIfNotFound(parent_ids[i]);
+            throw_if_not_found(parent_ids[i]);
         }
         
          for (size_t i = 0; i < parent_ids.size(); i++) {
@@ -214,8 +214,8 @@ public:
 
     void connect(typename Virus::id_type const &child_id,
             typename Virus::id_type const &parent_id) {
-        throwIfNotFound(child_id);
-        throwIfNotFound(parent_id);
+        throw_if_not_found(child_id);
+        throw_if_not_found(parent_id);
 
         std::shared_ptr<Node> child_sp = genealogy_.find(child_id)->second; // const
 
@@ -233,7 +233,7 @@ public:
 		}
     } // try-catch-reverse makes whole function strong
 	
-	void removeHelper(Node node, std::vector<std::pair<std::shared_ptr<Node>, bool>> &nodes) {
+	void remove_helper(Node node, std::vector<std::pair<std::shared_ptr<Node>, bool>> &nodes) {
 		
 		// copy	
 		auto id = node.get_id();
@@ -274,12 +274,12 @@ public:
            throw TriedToRemoveStemVirus();
         }
 		std::cout<<id<<"\n";
-        throwIfNotFound(id);
+        throw_if_not_found(id);
 
         std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // const
-		Node cp = *node_sp;
-		std::vector<std::pair<std::shared_ptr<Node>, bool>> v;
-		removeHelper(cp, v);
+		Node node_to_remove = *node_sp;
+		std::vector<std::pair<std::shared_ptr<Node>, bool>> affected_nodes;
+		remove_helper(node_to_remove, affected_nodes);
         /* std::vector<typename Virus::id_type> parent_ids = get_parents(id); // const?
         for (size_t i = 0; i < parent_ids.size(); i++) {
             std::shared_ptr<Node> parent_sp = genealogy_.find(parent_ids[i])->second;
@@ -298,13 +298,13 @@ public:
 
         genealogy_.erase(id); */
         std::cout<<"akdhsjiad\n";
-        for (auto x : v) {
-			auto it = x.first->get_iter();
-			Node n = *x.first;
-			if (!x.second) {
-				// tutaj trzeba jakoś zamienić, pod x.first jest uaktualniony
+        for (auto affected_node : affected_nodes) {
+			auto it = affected_node.first->get_iter();
+			Node n = *affected_node.first;
+			if (!affected_node.second) {
+				// tutaj trzeba jakoś zamienić, pod affected_node.first jest uaktualniony
 				// i trzeba go wrzucić na mapę
-				//it->second = x.first;
+				//it->second = affected_node.first;
 				//n = *genealogy_.find(n.get_id())->second;
 			}
 			else
@@ -317,8 +317,8 @@ public:
 			
 			std::cout<<n.get_virus().get_id()<<": (par)\n";
 			auto p = n.get_parents();
-			for (auto x : p)
-				std::cout<<x<<" ";
+			for (auto affected_node : p)
+				std::cout<<affected_node<<" ";
 			std::cout<<"\n";
 		}
     }
