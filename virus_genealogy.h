@@ -6,6 +6,7 @@
 #include <set>
 #include <utility>
 #include <cstddef>
+#include <iostream>
 #include <vector>
 
 class VirusNotFound : public std::exception {
@@ -58,6 +59,7 @@ private:
         Virus virus_;
         id_type id_;
         map_iter iter_;
+        bool pending_remove;
 
         std::set<std::weak_ptr<Node>, 
                  std::owner_less<std::weak_ptr<Node>>> children_;
@@ -94,7 +96,7 @@ private:
         }
 
         std::vector<id_type> get_children() const {
-            std::vector<id_type> children_ids(0);
+            std::vector<id_type> children_ids;
             for (std::weak_ptr<Node> node_wp : children_) {
                 std::shared_ptr<Node> node_sp = node_wp.lock();
                 children_ids.push_back(node_sp->id_);
@@ -104,7 +106,7 @@ private:
         }
 
         std::vector<id_type> get_parents() const {
-            std::vector<id_type> parent_ids(0);
+            std::vector<id_type> parent_ids;
             for (std::weak_ptr<Node> node_wp : parents_) {
                 std::shared_ptr<Node> node_sp = node_wp.lock();
                 parent_ids.push_back(node_sp->id_);
@@ -129,6 +131,14 @@ private:
         void set_iter(map_iter it) {
             iter_ = it;
         }
+        
+        bool get_pending_remove() {
+			return pending_remove;
+		}
+		
+		void set_pending_remove(bool b) {
+			pending_remove = b;
+		}
     };
     
 public:
@@ -151,42 +161,31 @@ public:
         get_children(id_type const &id) const {
         throw_if_not_found(id);
 
-        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // strong
+        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second;
         return node_sp->get_children();
     }
 
     std::vector<id_type> get_parents(id_type const &id) const {
         throw_if_not_found(id);
 
-        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // strong
+        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second;
         return node_sp->get_parents();
     }
 
     bool exists(id_type const &id) const {
-        return genealogy_.find(id) != genealogy_.end(); // strong
+        return genealogy_.find(id) != genealogy_.end();
     }
 
     Virus& operator[](id_type const &id) const {
         throw_if_not_found(id);
 
-        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // strong
+        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second;
         return node_sp->get_virus();
     }
 
     void create(id_type const &id, id_type const &parent_id) {
-        throw_if_already_created(id);
-        throw_if_not_found(parent_id);
-
-        std::shared_ptr<Node> node_sp = std::make_shared<Node>(id); //const
-        auto it = genealogy_.insert(std::make_pair(id, node_sp)).first; // strong
-
-        try {
-            node_sp->set_iter(it);
-            connect(id, parent_id); // strong
-        } catch (...) {
-            genealogy_.erase(it); // no-throw
-        }
-    } // try-catch-reverse makes the whole function strong
+		create(id, std::vector<id_type>{parent_id});
+    }
 
     void create(id_type const &id, std::vector<id_type> const &parent_ids) {
         throw_if_already_created(id);
@@ -200,8 +199,8 @@ public:
             nodes.push_back(genealogy_.find(parent_ids[i])->second); 
         }
         
-        std::shared_ptr<Node> node_sp = std::make_shared<Node>(id); // const
-        auto it = genealogy_.insert(std::make_pair(id, node_sp)).first; // strong
+        std::shared_ptr<Node> node_sp = std::make_shared<Node>(id);
+        auto it = genealogy_.insert(std::make_pair(id, node_sp)).first;
         
         try {
             node_sp->set_iter(it);
@@ -222,51 +221,68 @@ public:
         throw_if_not_found(child_id);
         throw_if_not_found(parent_id);
 
-        std::shared_ptr<Node> child_sp = genealogy_.find(child_id)->second; // const
+        std::shared_ptr<Node> child_sp = genealogy_.find(child_id)->second;
 
-        std::shared_ptr<Node> parent_sp = genealogy_.find(parent_id)->second; // const
+        std::shared_ptr<Node> parent_sp = genealogy_.find(parent_id)->second;
         
         if (!child_sp->edge_exists(parent_sp)) {
-            child_sp->add_parent(parent_sp); // strong
+            child_sp->add_parent(parent_sp);
             try {
-                parent_sp->add_child(child_sp); // strong
+                parent_sp->add_child(child_sp);
             } catch (...) {
-                child_sp->remove_parent(parent_sp); // no-throw
+                child_sp->remove_parent(parent_sp);
                 throw;
             }
         }
     } // try-catch-reverse makes whole function strong
     
-    void remove_helper(Node node, 
-         std::vector<std::pair<std::shared_ptr<Node>, bool>> &nodes) {
-        auto id = node.get_id();
+    std::vector<std::shared_ptr<Node>> remove_helper(id_type id,
+         std::map<id_type, std::shared_ptr<Node>> &gen_tmp, bool first) {	
         auto node_sp = genealogy_.find(id)->second;
-        std::vector<id_type> parent_ids = get_parents(id);
+        std::vector<id_type> parent_ids = node_sp->get_parents();
         
         for (std::size_t i = 0; i < parent_ids.size(); i++) {
-            std::shared_ptr<Node> parent_sp = genealogy_.find(parent_ids[i])->second;
+			auto iter = gen_tmp.find(parent_ids[i]);
+			std::shared_ptr<Node> parent_sp;
+			if (iter != gen_tmp.end())
+				parent_sp = iter->second;
+			else
+				parent_sp = genealogy_.find(parent_ids[i])->second;
             Node copy = *parent_sp;
             copy.remove_child(node_sp);
-            nodes.push_back(std::make_pair(
-                            std::make_shared<Node>(copy), false));
+            gen_tmp[copy.get_id()] = std::make_shared<Node>(copy);
         }
 
-        std::vector<id_type> children_ids = get_children(id);
+        std::vector<id_type> children_ids = node_sp->get_children();
         
         for (std::size_t i = 0; i < children_ids.size(); i++) {
-            std::shared_ptr<Node> child_sp = genealogy_.find(children_ids[i])->second;
-            Node copy = *child_sp;
+            auto iter = gen_tmp.find(children_ids[i]);
+			std::shared_ptr<Node> child_sp;
+			if (iter != gen_tmp.end())
+				child_sp = iter->second;
+			else
+				child_sp = genealogy_.find(children_ids[i])->second;
+            Node copy = *parent_sp;
             copy.remove_parent(node_sp);
-            nodes.push_back(std::make_pair(
-                            std::make_shared<Node>(copy), false));
+            gen_tmp[copy.get_id()] = std::make_shared<Node>(copy);
             if (copy.get_parents().size() == 0) {
-                remove_helper(copy, nodes);
+                remove_helper(copy.get_id(), gen_tmp, false);
             }
         }
         
         Node copy = *node_sp;
-        nodes.push_back(std::make_pair(
-                        std::make_shared<Node>(copy), true));
+        copy.set_pending_remove(true);
+        gen_tmp[copy.get_id()] = std::make_shared<Node>(copy);
+        
+        if (first) {
+			std::vector<std::shared_ptr<Node>> nodes;
+			for (auto pair : gen_tmp) {
+				nodes.push_back(pair.second);
+			}
+			return nodes;
+		} else {
+			return std::vector<std::shared_ptr<Node>>(0);
+		}
     }
         
     void remove(id_type const &id) {
@@ -275,16 +291,18 @@ public:
         }
         throw_if_not_found(id);
 
-        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // const
+        std::shared_ptr<Node> node_sp = genealogy_.find(id)->second;
         Node node_to_remove = *node_sp;
-        std::vector<std::pair<std::shared_ptr<Node>, bool>> affected_nodes;
-        remove_helper(node_to_remove, affected_nodes);
+        std::map<id_type, std::shared_ptr<Node>> mapa;
+        mapa.insert(std::make_pair(id, std::make_shared<Node>(node_to_remove)));
+        std::vector<std::shared_ptr<Node>> affected_nodes = 
+                                           remove_helper(id, mapa, true);
         
         for (auto affected_node : affected_nodes) {
-            Node node = *affected_node.first;
+            Node node = *affected_node;
             auto it = node.get_iter();
-            if (!affected_node.second) {
-                std::swap(*it->second, node);    
+            if (!node.get_pending_remove()) {
+                std::swap(*(it->second), node);    
             }
             else {
                 genealogy_.erase(it); 
