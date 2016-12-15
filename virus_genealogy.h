@@ -5,7 +5,6 @@
 #include <memory>
 #include <set>
 #include <utility>
-#include <iostream>
 #include <vector>
 
 class VirusNotFound : public std::exception {
@@ -69,8 +68,7 @@ private:
 
         void remove_parent(std::shared_ptr<Node> &parent) {
             std::weak_ptr<Node> parent_wp(parent); // no-throw
-			int x = parents_.erase(parent_wp); // no-throw
-			std::cout<<x<<"\n";
+			parents_.erase(parent_wp); // no-throw
         } // therefore no-throw
         
         bool edge_exists(std::shared_ptr<Node> &parent) {
@@ -90,7 +88,6 @@ private:
 
         std::vector<typename Virus::id_type> get_parents() const {
             std::vector<typename Virus::id_type> parent_ids(0);
-			//std::cout<<"here i am " << id_ << "\n";
             for (std::weak_ptr<Node> node_wp : parents_) {
                 std::shared_ptr<Node> node_sp = node_wp.lock();
                 parent_ids.push_back(node_sp->id_);
@@ -238,17 +235,11 @@ public:
 		// copy	
 		auto id = node.get_id();
 		auto node_sp = genealogy_.find(id)->second;
-		std::cout<<id<<" - id\n";
 		std::vector<typename Virus::id_type> parent_ids = get_parents(id); // const?
-		std::cout<<"pp\n";
         for (auto p : parent_ids) {
-			std::cout<<p<<" - par\n";
             std::shared_ptr<Node> parent_sp = genealogy_.find(p)->second;
             Node cp = *parent_sp;
             cp.remove_child(node_sp);
-            //for (size_t i = 0; i < cp.get_children().size(); i++)
-			//	std::cout<<cp.get_children()[i]<<" ";
-			//std::cout<<"\n\n";
             nodes.push_back(std::make_pair(std::make_shared<Node>(cp), false));
         }
 
@@ -257,7 +248,6 @@ public:
             std::shared_ptr<Node> child_sp = genealogy_.find(children_ids[i])->second;
             Node cp = *child_sp;
             cp.remove_parent(node_sp);
-            std::cout<<"tutaj\n";
             nodes.push_back(std::make_pair(std::make_shared<Node>(cp), false));
 
             if (cp.get_parents().size() == 0) {
@@ -266,38 +256,19 @@ public:
         }
 			
 		nodes.push_back(std::make_pair(node_sp, true));
-		std::cout<<"dodtad\n";
 	}
 		
     void remove(typename Virus::id_type const &id) {
         if (id == stem_id_) {
            throw TriedToRemoveStemVirus();
         }
-		std::cout<<id<<"\n";
         throw_if_not_found(id);
 
         std::shared_ptr<Node> node_sp = genealogy_.find(id)->second; // const
 		Node node_to_remove = *node_sp;
 		std::vector<std::pair<std::shared_ptr<Node>, bool>> affected_nodes;
 		remove_helper(node_to_remove, affected_nodes);
-        /* std::vector<typename Virus::id_type> parent_ids = get_parents(id); // const?
-        for (size_t i = 0; i < parent_ids.size(); i++) {
-            std::shared_ptr<Node> parent_sp = genealogy_.find(parent_ids[i])->second;
-            parent_sp->remove_child(node_sp);
-        }
 
-        std::vector<typename Virus::id_type> children_ids = get_children(id);
-        for (size_t i = 0; i < children_ids.size(); i++) {
-            std::shared_ptr<Node> child_sp = genealogy_.find(children_ids[i])->second;
-            child_sp->remove_parent(node_sp);
-
-            if (child_sp->get_parents().size() == 0) {
-                remove(child_sp->get_id());
-            }
-        }
-
-        genealogy_.erase(id); */
-        std::cout<<"akdhsjiad\n";
         for (auto affected_node : affected_nodes) {
 			auto it = affected_node.first->get_iter();
 			Node n = *affected_node.first;
@@ -309,17 +280,6 @@ public:
 			}
 			else
 				genealogy_.erase(it); 
-				
-			std::cout<<n.get_virus().get_id()<<": (child)\n";
-			for (size_t i = 0; i < n.get_children().size(); i++)
-				std::cout<<n.get_children()[i]<<" ";
-			std::cout<<"\n";
-			
-			std::cout<<n.get_virus().get_id()<<": (par)\n";
-			auto p = n.get_parents();
-			for (auto affected_node : p)
-				std::cout<<affected_node<<" ";
-			std::cout<<"\n";
 		}
     }
 };
