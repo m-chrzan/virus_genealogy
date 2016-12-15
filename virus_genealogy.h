@@ -116,7 +116,7 @@ private:
         }
         
 
-        Virus& get_virus() const {
+        Virus& get_virus() {
             return virus_;
         }
 
