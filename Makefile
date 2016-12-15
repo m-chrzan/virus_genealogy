@@ -1,7 +1,7 @@
 CXX=g++
 CXXFLAGS=-Wall -g -std=c++14
 
-TESTS=virus_genealogy_test.cc
+TESTS=virus_genealogy_test.cc virus_example.cc
 
 .PHONY: all clean
 
