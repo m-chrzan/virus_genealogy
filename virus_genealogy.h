@@ -102,7 +102,7 @@ private:
                 children_ids.push_back(node_sp->id_);
             }
 
-            return children_ids;
+            return children_ids; 
         }
 
         std::vector<id_type> get_parents() const {
@@ -116,15 +116,15 @@ private:
         }
         
 
-        Virus& get_virus() {
+        Virus& get_virus() const {
             return virus_;
         }
 
-        id_type get_id() {
+        id_type get_id() const {
             return id_;
         }
         
-        map_iter get_iter() {
+        map_iter get_iter() const {
             return iter_;
         }
             
@@ -132,7 +132,7 @@ private:
             iter_ = it;
         }
         
-        bool get_pending_remove() {
+        bool get_pending_remove() const {
 			return pending_remove;
 		}
 		
@@ -262,7 +262,7 @@ public:
 				child_sp = iter->second;
 			else
 				child_sp = genealogy_.find(children_ids[i])->second;
-            Node copy = *parent_sp;
+            Node copy = *child_sp;
             copy.remove_parent(node_sp);
             gen_tmp[copy.get_id()] = std::make_shared<Node>(copy);
             if (copy.get_parents().size() == 0) {
