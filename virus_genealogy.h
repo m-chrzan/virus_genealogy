@@ -237,7 +237,8 @@ public:
         }
     } // try-catch-reverse makes whole function strong
     
-    void remove_helper(Node node, std::vector<std::pair<std::shared_ptr<Node>, bool>> &nodes) {
+    void remove_helper(Node node, 
+         std::vector<std::pair<std::shared_ptr<Node>, bool>> &nodes) {
         auto id = node.get_id();
         auto node_sp = genealogy_.find(id)->second;
         std::vector<id_type> parent_ids = get_parents(id);
@@ -246,7 +247,8 @@ public:
             std::shared_ptr<Node> parent_sp = genealogy_.find(parent_ids[i])->second;
             Node copy = *parent_sp;
             copy.remove_child(node_sp);
-            nodes.push_back(std::make_pair(std::make_shared<Node>(copy), false));
+            nodes.push_back(std::make_pair(
+                            std::make_shared<Node>(copy), false));
         }
 
         std::vector<id_type> children_ids = get_children(id);
@@ -255,15 +257,16 @@ public:
             std::shared_ptr<Node> child_sp = genealogy_.find(children_ids[i])->second;
             Node copy = *child_sp;
             copy.remove_parent(node_sp);
-            nodes.push_back(std::make_pair(std::make_shared<Node>(copy), false));
+            nodes.push_back(std::make_pair(
+                            std::make_shared<Node>(copy), false));
             if (copy.get_parents().size() == 0) {
                 remove_helper(copy, nodes);
             }
         }
         
         Node copy = *node_sp;
-        std::shared_ptr<Node> node_sp2 = std::make_shared<Node>(copy);
-        nodes.push_back(std::make_pair(node_sp2, true));
+        nodes.push_back(std::make_pair(
+                        std::make_shared<Node>(copy), true));
     }
         
     void remove(id_type const &id) {
