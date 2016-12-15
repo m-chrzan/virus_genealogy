@@ -6,7 +6,6 @@
 #include <set>
 #include <utility>
 #include <cstddef>
-#include <iostream>
 #include <vector>
 
 class VirusNotFound : public std::exception {
