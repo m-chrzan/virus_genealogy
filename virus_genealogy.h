@@ -2,7 +2,6 @@
 #define VIRUS_GENEALOGY_H
 
 #include <map>
-#include <iostream>
 #include <memory>
 #include <set>
 #include <utility>
@@ -326,7 +325,6 @@ public:
                 genealogy_.erase(it); 
             }
         }
-       
     }
 };
 
