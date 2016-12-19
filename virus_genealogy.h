@@ -2,6 +2,7 @@
 #define VIRUS_GENEALOGY_H
 
 #include <map>
+#include <iostream>
 #include <memory>
 #include <set>
 #include <utility>
@@ -67,7 +68,7 @@ private:
         
     public:
                 
-        Node(id_type const &id) : virus_(id), id_(id) {
+        Node(id_type const &id) : virus_(id), id_(id), pending_remove(false) {
         }
 		
 		Node(Node const& obj) : Node(obj.id_) {
@@ -83,6 +84,7 @@ private:
 			children_ = obj.children_;
 			iter_ = obj.iter_;
 			pending_remove = obj.pending_remove;
+			return *this;
 		}
 		
         void add_child(std::shared_ptr<Node> &child) {
@@ -324,6 +326,7 @@ public:
                 genealogy_.erase(it); 
             }
         }
+       
     }
 };
 
