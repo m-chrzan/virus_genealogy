@@ -69,7 +69,22 @@ private:
                 
         Node(id_type const &id) : virus_(id), id_(id) {
         }
-
+		
+		Node(Node const& obj) : Node(obj.id_) {
+			parents_ = obj.parents_;
+			children_ = obj.children_;
+			iter_ = obj.iter_;
+			pending_remove = obj.pending_remove;
+		}
+		
+		Node& operator=(const Node& obj)
+		{
+			parents_ = obj.parents_;
+			children_ = obj.children_;
+			iter_ = obj.iter_;
+			pending_remove = obj.pending_remove;
+		}
+		
         void add_child(std::shared_ptr<Node> &child) {
             std::weak_ptr<Node> child_wp(child); // const
             children_.insert(child_wp); // strong
@@ -188,6 +203,8 @@ public:
 
     void create(id_type const &id, std::vector<id_type> const &parent_ids) {
         throw_if_already_created(id);
+        if (parent_ids.size() == 0)
+			throw VirusNotFound();
         
         std::vector<std::shared_ptr<Node>> nodes;
         for (std::size_t i = 0; i < parent_ids.size(); i++) {
